@@ -37,8 +37,12 @@
         var _path = $delegate.path();
         $delegate.path = function(path) {
           if(path) {
-            _path = path;
-            $rootScope.$broadcast('$locationChangeSuccess', path);
+            // sometimes the broadcast triggers a new request for same path
+            // added this conditional to mitigate risk of this infinite loop
+            if (_path !== path) {
+              _path = path;
+              $rootScope.$broadcast('$locationChangeSuccess', path);                           
+            } 
             return this;
           }
           else {
@@ -220,7 +224,10 @@
       this.rootScope().__view_status = ++$viewCounter;
       this.until(function() {
         return parseInt($terminalElement.attr('status')) >= $viewCounter;
-      }, callback || noop);
+      }, function(){ 
+        // give it another tick to settle
+        setTimeout(callback || noop, 0)
+      });
 
       var $location = this.inject('$location');
       this.apply(function() {
